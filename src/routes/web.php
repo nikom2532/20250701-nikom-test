@@ -1,37 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\ProductController;
+use App\Http\Controllers\WorkLogController;
 
+// สร้าง Routes สำหรับ CRUD (index, create, store, edit, update, destroy) อัตโนมัติ
+Route::resource('worklogs', WorkLogController::class);
 
-Route::get('/', [PageController::class, 'home']);
-Route::get('/about', [PageController::class, 'about']);
-
-Route::resource('products', ProductController::class);
-
-
-/*
-
-Route::get('/', function () {
-    return 'Hello World';
-});
-
-Route::get('/about', function () {
-    return 'เกี่ยวกับเรา';
-});
-
-*/
-
-Route::get('/hello', function () {
-    return view('hello');
-});
-
-Route::get('/welcome', function () {
-    return view('welcome');
-});
-
-// routes/web.php
-Route::get('/info', function () {
-    return view('info');
-});
+// Routes สำหรับหน้ารายงาน
+Route::get('reports/daily', [WorkLogController::class, 'dailyReport'])->name('reports.daily');
+Route::get('reports/monthly', [WorkLogController::class, 'monthlySummary'])->name('reports.monthly');
