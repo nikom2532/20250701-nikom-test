@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<!-- ย้ำ รูปทุกรูป มี Reference จาก https://today.line.me/th/v3/article/yDppxE นะครับ -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temple Display</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        /* 1. Container with background image */
+        #temple.templeall {
+            width: 100%;
+            min-height: 100vh; /* Ensure it covers the viewport */
+            background-image: url('images/3d-cube-transparent-png-4.png'); /* Placeholder background image */
+            background-size: cover; /* Cover the entire container without distortion */
+            background-position: center; /* Center the background image */
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .controls button.column-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .controls button.column-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .controls button.autoplay-toggle {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .controls button.autoplay-toggle.active {
+            background-color: #dc3545; /* Red when active/playing */
+        }
+
+        .controls button.autoplay-toggle:hover {
+            opacity: 0.9;
+        }
+
+        /* 2. Item display with adjustable columns */
+        .wat-container {
+            width: 90%; /* Adjust as needed */
+            display: grid;
+            gap: 20px; /* Space between items */
+            justify-content: center;
+        }
+
+        /* Default 3 columns for medium screens, will be overridden by JS */
+        .wat-container.cols-3 {
+            grid-template-columns: repeat(3, minmax(300px, 1fr));
+        }
+
+        .wat-container.cols-2 {
+            grid-template-columns: repeat(2, minmax(300px, 1fr));
+        }
+
+        .wat-container.cols-4 {
+            grid-template-columns: repeat(4, minmax(300px, 1fr));
+        }
+
+        /* Ensure items adjust on smaller screens */
+        @media (max-width: 992px) {
+            .wat-container.cols-4 {
+                grid-template-columns: repeat(3, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .wat-container.cols-3,
+            .wat-container.cols-4 {
+                grid-template-columns: repeat(2, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .wat-container.cols-2,
+            .wat-container.cols-3,
+            .wat-container.cols-4 {
+                grid-template-columns: repeat(1, minmax(300px, 1fr));
+            }
+        }
+
+        #watthai.wat {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden; /* Important for image cropping */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            padding-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        #watthai.wat:hover {
+            transform: translateY(-5px);
+        }
+
+        /* 4. Image display with cropping */
+        .image-wrapper {
+            width: 300px;
+            height: 300px;
+            overflow: hidden; /* Crops the image outside this div */
+            display: flex; /* Helps in centering the image if needed */
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #imagewatthai.imagewatthai2 {
+            width: 100%; /* Make image take full width of its container */
+            height: 100%; /* Make image take full height of its container */
+            object-fit: cover; /* This is the key for cropping without distortion */
+            display: block; /* Remove extra space below image */
+        }
+
+        .wat h3 {
+            margin: 175px 0;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px #000000; /* เพิ่มเงาให้ข้อความ */
+            position: absolute;
+        }
+
+        .wat p {
+            color: #666;
+            padding: 0 15px;
+            font-size: 0.9em;
+        }
+
+        /* Autoplay specific styling for visibility */
+        .wat.hidden {
+            display: none !important; /* Hide items when not in the current view */
+        }
+
+        .pagination {
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #6c757d;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination button:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div id="temple" class="templeall">
+        <h1>Template By Region</h1>
+        <h1>ค้นหาข้อมูลวัดตามภูมิภาค</h1>
+
+        <div class="controls">
+            <label for="columnSelect">ปรับจำนวนคอลัมภ์:</label>
+            <button class="column-btn" data-cols="2">2 คอลัมภ์</button>
+            <button class="column-btn" data-cols="3">3 คอลัมภ์</button>
+            <button class="column-btn" data-cols="4">4 คอลัมภ์</button>
+
+            <label for="autoplayToggle">การแสดงผลแบบ Auto Play:</label>
+            <button class="autoplay-toggle">เปิด Auto Play</button>
+        </div>
+
+        <div class="wat-container cols-3">
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/1.jpg" alt="Wat Image 1">
+                </div>
+                <h3>ภาคเหนือ</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/2.jpg" alt="Wat Image 2">
+                </div>
+                <h3>ภาคกลาง</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/3.jpg" alt="Wat Image 3">
+                </div>
+                <h3>ภาคตะวันออกเฉียงเหนือ</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/4.jpg" alt="Wat Image 4">
+                </div>
+                <h3>ภาคตะวันตก</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/5.jpg" alt="Wat Image 5">
+                </div>
+                <h3>ภาคตะวันออก</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/6.jpg" alt="Wat Image 6">
+                </div>
+                <h3>ภาคใต้</h3>
+                
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/7.jpg" alt="Wat Image 7">
+                </div>
+                <h3>วัดไทยที่ 7</h3>
+
+            </div>
+            <div id="watthai" class="wat">
+                <div class="image-wrapper">
+                    <img id="imagewatthai" class="imagewatthai2" src="images/8.jpg" alt="Wat Image 8">
+                </div>
+                <h3>วัดไทยที่ 8</h3>
+
+            </div>
+            </div>
+
+        <div class="pagination">
+            <button class="prev-page">ก่อนหน้า</button>
+            <span class="page-info">หน้า 1 จาก 1</span>
+            <button class="next-page">ถัดไป</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const watContainer = document.querySelector('.wat-container');
+            const columnButtons = document.querySelectorAll('.column-btn');
+            const autoplayToggleBtn = document.querySelector('.autoplay-toggle');
+            const prevPageBtn = document.querySelector('.prev-page');
+            const nextPageBtn = document.querySelector('.next-page');
+            const pageInfoSpan = document.querySelector('.page-info');
+            const allWatItems = Array.from(document.querySelectorAll('#watthai.wat'));
+
+            let currentColumns = 3; // Default columns
+            let isAutoplaying = false;
+            let autoplayInterval;
+            let currentPage = 0;
+            let itemsPerPage = currentColumns;
+
+            // Function to update column layout
+            function updateColumns(cols) {
+                watContainer.classList.remove('cols-2', 'cols-3', 'cols-4');
+                watContainer.classList.add(`cols-${cols}`);
+                currentColumns = cols;
+                itemsPerPage = currentColumns; // Items per page changes with columns
+                displayPage(currentPage); // Re-display page based on new columns
+            }
+
+            // Event listeners for column buttons
+            columnButtons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const cols = parseInt(event.target.dataset.cols);
+                    updateColumns(cols);
+                });
+            });
+
+            // Auto Play functionality
+            function startAutoplay() {
+                if (autoplayInterval) clearInterval(autoplayInterval); // Clear existing interval if any
+                autoplayInterval = setInterval(() => {
+                    currentPage = (currentPage + 1) % Math.ceil(allWatItems.length / itemsPerPage);
+                    displayPage(currentPage);
+                }, 3000); // Change page every 3 seconds
+                autoplayToggleBtn.textContent = 'ปิด Auto Play';
+                autoplayToggleBtn.classList.add('active');
+                isAutoplaying = true;
+            }
+
+            function stopAutoplay() {
+                clearInterval(autoplayInterval);
+                autoplayInterval = null;
+                autoplayToggleBtn.textContent = 'เปิด Auto Play';
+                autoplayToggleBtn.classList.remove('active');
+                isAutoplaying = false;
+            }
+
+            // Toggle Auto Play button
+            autoplayToggleBtn.addEventListener('click', () => {
+                if (isAutoplaying) {
+                    stopAutoplay();
+                } else {
+                    startAutoplay();
+                }
+            });
+
+            // Pagination functionality
+            function displayPage(pageIndex) {
+                const startIndex = pageIndex * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+
+                allWatItems.forEach((item, index) => {
+                    if (index >= startIndex && index < endIndex) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                currentPage = pageIndex;
+                const totalPages = Math.ceil(allWatItems.length / itemsPerPage);
+                pageInfoSpan.textContent = `หน้า ${currentPage + 1} จาก ${totalPages}`;
+
+                // Disable/enable navigation buttons
+                prevPageBtn.disabled = currentPage === 0;
+                nextPageBtn.disabled = currentPage === totalPages - 1 || totalPages === 0;
+            }
+
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    displayPage(currentPage);
+                    if (isAutoplaying) startAutoplay(); // Reset autoplay timer
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(allWatItems.length / itemsPerPage);
+                if (currentPage < totalPages - 1) {
+                    currentPage++;
+                    displayPage(currentPage);
+                    if (isAutoplaying) startAutoplay(); // Reset autoplay timer
+                }
+            });
+
+            // Initial setup
+            updateColumns(currentColumns); // Set initial columns
+            displayPage(currentPage); // Display the first page
+        });
+    </script>
+</body>
+</html>
