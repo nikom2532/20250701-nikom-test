@@ -7,7 +7,7 @@ services:
     image: php:8.2-fpm
     container_name: laravel_app
     restart: unless-stopped
-    working_dir: /var/www/html
+    working_dir: /var/www/html/
     volumes:
       - ./src:/var/www/html
     environment:
